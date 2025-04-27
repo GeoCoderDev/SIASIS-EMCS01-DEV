@@ -1,6 +1,7 @@
 # .github/workflows/database-replication.yml
 name: Database Replication
 
+# Este workflow se activa cuando recibe un dispatch desde la API
 on:
   repository_dispatch:
     types: [database-replication]
@@ -22,15 +23,39 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Install ts-node
+        run: npm install -g ts-node typescript
+      
+      - name: Check environment variables
+        run: |
+          echo "Verificando variables de evento..."
+          if [ -z "$SQL_QUERY" ]; then
+            echo "⚠️ Error: SQL_QUERY no está definido"
+            exit 1
+          fi
+          echo "✅ Variables de evento verificadas"
+      
       - name: Execute database replication
-        run: node scripts/replicate-database.js
+        run: ts-node ./scripts/replicate-database.ts
         env:
-          # Variables del evento
+          # Parámetros del evento
           SQL_QUERY: ${{ github.event.client_payload.sql }}
           SQL_PARAMS: ${{ toJSON(github.event.client_payload.params) }}
           INSTANCIAS_A_ACTUALIZAR: ${{ toJSON(github.event.client_payload.instanciasAActualizar) }}
           
-          # Variables para las conexiones de base de datos (secretos)
+          # Variables para las conexiones de base de datos
           RDP02_INS1_DATABASE_URL: ${{ secrets.RDP02_INS1_DATABASE_URL }}
           RDP02_INS2_DATABASE_URL: ${{ secrets.RDP02_INS2_DATABASE_URL }}
           RDP02_INS3_DATABASE_URL: ${{ secrets.RDP02_INS3_DATABASE_URL }}
+      
+      - name: Notify completion
+        if: always()
+        run: |
+          RESULT="${{ job.status }}"
+          echo "Replicación completada con estado: $RESULT"
+          
+          if [ "$RESULT" = "success" ]; then
+            echo "✅ Todas las operaciones se completaron exitosamente"
+          else
+            echo "❌ Ocurrieron errores durante la replicación"
+          fi
