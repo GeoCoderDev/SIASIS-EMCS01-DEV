@@ -1,6 +1,7 @@
 // scripts/replicate-database.ts
 import { Pool, QueryResult } from "pg";
 import { RDP02 } from "../../interfaces/shared/RDP02Instancias";
+import { RDP02_INSTANCES_DATABASE_URL_MAP } from "../../constants/RDP02_INSTANCES_DISTRIBUTION";
 
 // Tipos para los resultados
 interface ReplicationResult {
@@ -37,13 +38,6 @@ try {
   process.exit(1);
 }
 
-// Mapa de URLs de bases de datos
-const dbUrlMap: Record<RDP02, string | undefined> = {
-  [RDP02.INS1]: process.env.RDP02_INS1_DATABASE_URL,
-  [RDP02.INS2]: process.env.RDP02_INS2_DATABASE_URL,
-  [RDP02.INS3]: process.env.RDP02_INS3_DATABASE_URL,
-};
-
 async function replicateToDatabases(): Promise<void> {
   console.log(
     `Iniciando replicación para ${instanciasAActualizar.length} instancias`
@@ -54,7 +48,7 @@ async function replicateToDatabases(): Promise<void> {
   const results: ReplicationResult[] = [];
 
   for (const instancia of instanciasAActualizar) {
-    const dbUrl = dbUrlMap[instancia];
+    const dbUrl = RDP02_INSTANCES_DATABASE_URL_MAP.get(instancia);
 
     if (!dbUrl) {
       console.warn(`URL no disponible para instancia ${instancia}, omitiendo`);
