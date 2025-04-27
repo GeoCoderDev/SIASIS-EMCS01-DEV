@@ -26,17 +26,8 @@ jobs:
       - name: Install ts-node
         run: npm install -g ts-node typescript
       
-      - name: Check environment variables
-        run: |
-          echo "Verificando variables de evento..."
-          if [ -z "$SQL_QUERY" ]; then
-            echo "⚠️ Error: SQL_QUERY no está definido"
-            exit 1
-          fi
-          echo "✅ Variables de evento verificadas"
-      
       - name: Execute database replication
-        run: ts-node ./scripts/replicate-database.ts
+        run: ts-node ./src/jobs/replications/ReplicateToRDP02Instances.ts
         env:
           # Parámetros del evento
           SQL_QUERY: ${{ github.event.client_payload.sql }}
