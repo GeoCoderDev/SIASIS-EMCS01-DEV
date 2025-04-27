@@ -1,0 +1,36 @@
+# .github/workflows/database-replication.yml
+name: Database Replication
+
+on:
+  repository_dispatch:
+    types: [database-replication]
+
+jobs:
+  replicate-to-databases:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Execute database replication
+        run: node scripts/replicate-database.js
+        env:
+          # Variables del evento
+          SQL_QUERY: ${{ github.event.client_payload.sql }}
+          SQL_PARAMS: ${{ toJSON(github.event.client_payload.params) }}
+          INSTANCIAS_A_ACTUALIZAR: ${{ toJSON(github.event.client_payload.instanciasAActualizar) }}
+          
+          # Variables para las conexiones de base de datos (secretos)
+          RDP02_INS1_DATABASE_URL: ${{ secrets.RDP02_INS1_DATABASE_URL }}
+          RDP02_INS2_DATABASE_URL: ${{ secrets.RDP02_INS2_DATABASE_URL }}
+          RDP02_INS3_DATABASE_URL: ${{ secrets.RDP02_INS3_DATABASE_URL }}
