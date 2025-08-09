@@ -1,0 +1,62 @@
+name: Transpile to Production Branch
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'src/**'
+      - 'tsconfig.json'
+      - 'package.json'
+
+jobs:
+  transpile-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout master branch
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Prepare production files
+        run: |
+          # Crear estructura para rama transpilada
+          mkdir -p transpiled-output
+          
+          # Copiar archivos transpilados
+          cp -r dist/* transpiled-output/
+          
+          # Copiar package.json (solo production dependencies)
+          cp package.json transpiled-output/
+          
+          # Copiar otros archivos necesarios
+          cp -r node_modules transpiled-output/ || echo "node_modules no copiado"
+
+      - name: Checkout transpiled branch
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          
+          # Cambiar a rama transpilada (crear si no existe)
+          git checkout -B transpilado
+          
+          # Limpiar rama y copiar nuevos archivos
+          git rm -rf . || true
+          cp -r transpiled-output/* .
+          
+          # Commit y push
+          git add .
+          git commit -m "Auto-transpile from master $(date '+%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+          git push origin transpilado --force
