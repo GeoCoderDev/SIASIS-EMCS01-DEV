@@ -1,4 +1,3 @@
-// scripts/replicate-database.ts
 import { Pool, QueryResult } from "pg";
 import { RDP02 } from "../../interfaces/shared/RDP02Instancias";
 import { RDP02_INSTANCES_DATABASE_URL_MAP } from "../../constants/RDP02_INSTANCES_DISTRIBUTION";
