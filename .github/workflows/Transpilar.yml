@@ -1,5 +1,5 @@
-
-name: Transpilacion de EMCS01 a JavaScript
+# .github/workflows/transpile-to-production.yml
+name: Transpile to Production Branch
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          token: ${{ secrets.THIS_REPOSITORY_GITHUB_TOKEN_PAT }}  # Usar token por defecto
+          token: ${{ secrets.GITHUB_TOKEN }}  # Usar token por defecto
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -42,6 +42,25 @@ jobs:
       - name: Build TypeScript
         run: npm run build
 
+      - name: Install production dependencies only
+        run: |
+          # Crear package.json solo con dependencias de producción
+          echo '{
+            "name": "transpiled-production",
+            "version": "1.0.0",
+            "main": "index.js",
+            "dependencies": {
+              "pg": "^8.11.0"
+            }
+          }' > package-prod.json
+          
+          # Instalar solo dependencias de producción en directorio separado
+          mkdir -p prod-modules
+          cd prod-modules
+          cp ../package-prod.json ./package.json
+          npm install --production
+          cd ..
+
       - name: Checkout transpiled branch
         run: |
           git config --global user.name 'github-actions[bot]'
@@ -53,10 +72,23 @@ jobs:
           # Limpiar rama completamente
           git rm -rf . || true
           
-          # Copiar SOLO los archivos JavaScript transpilados
+          # Copiar archivos JavaScript transpilados
           cp -r dist/* .
+          
+          # Copiar node_modules de producción
+          cp -r prod-modules/node_modules ./
+          
+          # Crear package.json mínimo para la rama transpilada
+          echo '{
+            "name": "transpiled-production",
+            "version": "1.0.0",
+            "main": "index.js",
+            "dependencies": {
+              "pg": "^8.11.0"
+            }
+          }' > package.json
           
           # Commit y push con token
           git add .
           git commit -m "Auto-transpile from master $(date '+%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
-          git push https://x-access-token:${{ secrets.THIS_REPOSITORY_GITHUB_TOKEN_PAT }}@github.com/${{ github.repository }}.git transpilado --force
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git transpilado --force

@@ -1,3 +1,4 @@
+# .github/workflows/database-replication.yml
 name: Database Replication
 
 # Este workflow se activa cuando recibe un dispatch desde la API
@@ -20,11 +21,7 @@ jobs:
         with:
           node-version: "22"
           
-      - name: Install only required dependencies
-        run: |
-          # Crear package.json mínimo e instalar solo pg
-          echo '{"name":"db-replication","version":"1.0.0","main":"index.js"}' > package.json
-          npm install pg
+      # ¡NO INSTALAMOS NADA! Los node_modules ya están en la rama transpilada
           
       - name: Execute database replication
         run: node ./jobs/replications/ReplicateToRDP02Instances.js
